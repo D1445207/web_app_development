@@ -1,97 +1,80 @@
-# 系統架構設計：線上算命系統
+# 系統架構文件 (ARCHITECTURE) - 個人簿記系統
 
 ## 1. 技術架構說明
+本專案採用經典的伺服器端渲染 (Server-Side Rendering, SSR) 模式來打造一個輕量級且直接的個人簿記 Web 應用程式。並未實施前後端分離，藉此維持系統的純粹並且降低多餘的互動介面層。
 
-本專案採用伺服器端渲染（Server-Side Rendering, SSR）架構，不進行前後端分離，以保持架構單純，適合快速開發與驗證 MVP（最小可行性產品）。
+### 選用技術與原因
+- **後端框架：Python + Flask**
+  - **原因**：Flask 是一個微型 (Micro) 且具高度擴展性的後端框架。對於我們的個人記帳專案來說，比起龐大的框架，Flask 提供的單純路由與靈活套件整合更貼合輕量化簿記系統的需求，也能加速 MVP 的開發。
+- **模板引擎：Jinja2**
+  - **原因**：內建於 Flask。可以讓我們輕鬆地將 Python 處理好的資料（如：支出紀錄列表、總額數字）動態帶入 HTML 中顯示。讓頁面渲染統一由後端掌管，免除實作繁雜的前端資料獲取邏輯。
+- **資料庫：SQLite**
+  - **原因**：它是一種檔案型資料庫，輕量且不需要設定與啟動資料庫伺服器。對個人的收支資料儲存來說效能已經非常足夠，並且在專案轉移與備份上極具優勢（只需維護一個檔案）。
 
-- **選用技術與原因**：
-  - **後端：Python + Flask**。Flask 是一個輕量級的網頁框架，學習曲線平緩，非常適合用來快速建立只有少數路由與功能的小型系統。
-  - **模板引擎：Jinja2**。內建於 Flask 中，可以直接在 HTML 中寫入 Python 變數與邏輯（如迴圈、條件判斷），快速實現動態網頁渲染。
-  - **資料庫：SQLite**。這是一個輕量級的關聯式資料庫，不需要額外架設伺服器，資料儲存在單一檔案中，非常適合初期的使用者紀錄與香油錢捐獻紀錄。
+### MVC 模式對應說明
+為了維護程式碼的可讀性，我們會將專案依循 MVC 的理念劃分檔案職責：
+- **Model（模型）**：專門負責向 SQLite 進行資料的存取與變更（CRUD）。
+- **View（視圖）**：由 Jinja2 配合 HTML 所建立的模板，負責畫面的靜態架構與動態資料顯示。
+- **Controller（控制器）**：定義於 Flask 路由的邏輯中。擔任 Model 跟 View 之間溝通的橋樑，處理用戶的網路請求 HTTP Request、調用 Model 計算分析資料，最後交給 View 來生合成網頁。
 
-- **Flask MVC 模式說明**：
-  - **Model（模型）**：負責與資料庫（SQLite）溝通。例如定義 `User`（使用者）與 `History`（算命紀錄）等資料表結構，並處理資料的新增、查詢。
-  - **View（視圖）**：負責畫面呈現，由 Jinja2 搭配 HTML/CSS/JS 構成。用來呈現抽籤結果、捐獻表單與歷史紀錄畫面。
-  - **Controller（控制器）**：由 Flask 的路由 (`routes`) 擔任。負責接收來自使用者的 Request（如點擊抽籤、註冊會員、送出捐獻表單），調用 Model 去要資料，最後把資料傳給 View 來產生畫面回傳給使用者。
+---
 
 ## 2. 專案資料夾結構
-
-以下是專案預計的資料夾結構，每個目錄與檔案皆有明確的職責劃分：
+為了支援 MVC 且方便日後維護，本專案的目錄結構安排如下：
 
 ```text
 web_app_development/
 ├── app/
-│   ├── models/             ← 資料庫模型 (Models)
-│   │   ├── __init__.py
-│   │   ├── user.py         ← 會員資料表定義 (處理註冊登入)
-│   │   └── record.py       ← 算命紀錄與捐獻紀錄資料表定義
-│   ├── routes/             ← Flask 路由 (Controllers)
-│   │   ├── __init__.py
-│   │   ├── main.py         ← 首頁與算命/抽籤的核心路由
-│   │   ├── auth.py         ← 註冊、登入與登出路由
-│   │   └── api.py          ← (可選) 處理前端 AJAX 請求，像是香油錢捐獻 API
-│   ├── templates/          ← Jinja2 HTML 模板 (Views)
-│   │   ├── base.html       ← 共用模板（包含標頭、導覽列、頁尾）
-│   │   ├── index.html      ← 首頁/算命介面
-│   │   ├── result.html     ← 抽籤/算命結果顯示頁面
-│   │   ├── history.html    ← 會員中心與歷史紀錄頁面
-│   │   ├── donate.html     ← 香油錢捐獻頁面
-│   │   └── auth/           ← 身份驗證相關視圖
-│   │       ├── login.html
-│   │       └── register.html
-│   └── static/             ← CSS / JS 等靜態資源
+│   ├── __init__.py      # Flask 應用程式初始化與配置設定
+│   ├── models.py        # 資料庫模型結構及資料互動與操作邏輯 (Model)
+│   ├── routes.py        # 應用程式的詳細網站路由與處理邏輯 (Controller)
+│   ├── templates/       # 所有的 Jinja2 HTML 模板檔案 (View)
+│   │   ├── base.html    # 共用的網頁排版與共通載入資源 (Navigator/Footer)
+│   │   ├── index.html   # 首頁明細清單與結餘總結
+│   │   └── form.html    # 新增及編輯紀錄專用的輔助表單頁面
+│   └── static/          # 供前端網頁使用的靜態資源
 │       ├── css/
-│       │   └── style.css   ← 全站共用樣式 (如需客製化或擴充 Tailwind)
-│       ├── js/
-│       │   └── custom.js   ← 處理抽籤動畫等前端互動腳本
-│       └── images/         ← 籤筒、擲筊、籤詩圖片等
+│       │   └── style.css# 負責畫面的配色、版面等視覺調整
+│       └── js/
+│           └── main.js  # 若有圖表需求或簡單自訂行為可放置於此
 ├── instance/
-│   └── database.db         ← SQLite 資料庫 (存放實際資料，不進版本控制)
-├── docs/                   ← 專案設計文件 (PRD, 架構文件等)
-├── .gitignore              ← Git 忽略檔案設定
-├── app.py                  ← 專案入口檔 (初始化 Flask App)
-└── requirements.txt        ← Python 套件依賴清單
+│   └── database.db      # SQLite 資料庫檔案實體（建議放入 .gitignore）
+├── docs/
+│   ├── PRD.md           # 產品需求文件
+│   └── ARCHITECTURE.md  # 系統架構說明書（本文件）
+├── requirements.txt     # 記載 Python 的外部函式庫套件版本
+└── run.py               # 專案服務啟動入口
 ```
+
+---
 
 ## 3. 元件關係圖
-
-以下展示使用者從瀏覽器發出請求，到系統處理並回傳畫面的完整流程（MVC 資料流）：
+使用者與各重點模組之間的資料與控制流圖解：
 
 ```mermaid
-graph TD
-    %% 定義節點
-    Browser(瀏覽器 - 使用者)
-    
-    subgraph Flask Application
-        Route[Flask Route<br>Controller]
-        Model[Model<br>Database Logic]
-        Template[Jinja2 Template<br>View]
-    end
-    
-    DB[(SQLite<br>Database)]
+sequenceDiagram
+    participant Browser as 瀏覽器 (Client)
+    participant Route as Flask Route (Controller)
+    participant Model as Database Model (Model)
+    participant DB as SQLite (Database)
+    participant Template as Jinja2 Template (View)
 
-    %% 流程線
-    Browser -- "1. 發出 HTTP Request (如點擊抽籤)" --> Route
-    Route -- "2. 要求查詢或寫入紀錄" --> Model
-    Model -- "資料讀寫" --> DB
-    Model -. "3. 回傳資料物件" .-> Route
-    Route -- "4. 傳遞變數給視圖渲染" --> Template
-    Template -. "5. 生成完整 HTML" .-> Route
-    Route -. "6. 回傳 HTTP Response (HTML)" .-> Browser
-
-    %% 樣式設定
-    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
-    classDef highlight fill:#d4edda,stroke:#28a745,stroke-width:2px;
-    class Route,Model,Template highlight;
+    Browser->>Route: 1. 發送 HTTP 請求 (如看首頁、提交新增收支)
+    Route->>Model: 2. 呼叫函式以提取紀錄或新增資料
+    Model->>DB: 3. 執行 SQL 語法或 ORM 操作
+    DB-->>Model: 4. 回傳受影響的資料列或查詢結果集
+    Model-->>Route: 5. 彙整統計，如總收入、總支出計算
+    Route->>Template: 6. 將彙整後最終結果變數傳送給 Jinja2
+    Template-->>Route: 7. 利用傳入的變數編織出完整的 HTML 結構
+    Route-->>Browser: 8. 將 HTML 作為請求結果回傳給使用者呈現畫面
 ```
 
-## 4. 關鍵設計決策
+---
 
-1. **不分離前後端，採用 Jinja2 直接渲染頁面**
-   - **原因**：考量到這是一個以內容呈現與表單遞交為主的 MVP 專案，採用伺服器端渲染能省去前端框架設置以及 API 串接等跨域 (CORS) 複雜度，開發速度更快，也可以更容易處理 SEO（若未來有需要）。
-2. **利用 Flask Blueprints 按功能拆分路由**
-   - **原因**：為了避免所有的功能（算命、登入、捐款）都混雜在同一個 `app.py` 中，我們在 `routes/` 資料夾下利用 Blueprint 切分不同的負責範圍（例如 `main.py`, `auth.py`）。這樣可以保持程式碼整潔，方便未來擴充或除錯。
-3. **資料庫單純化，採用 SQLite**
-   - **原因**：系統初期主要需要記錄「會員帳號」與「過去抽籤結果」，資料量與併發數不大。選用 SQLite 不需要額外架設資料庫伺服器，且在 Python 內建支援極佳，備份也非常容易（只要拷貝一個 .db 檔案）。
-4. **抽籤/擲筊等動畫效果交由前端 JavaScript 實作**
-   - **原因**：互動動畫（例如搖晃籤筒、丟擲筊杯）是不需要頻繁往返後端邏輯的視覺效果。為確保畫面流暢自然，這些互動將在前端使用純 JavaScript 及 CSS 動畫負責，直到結果出爐才與後端通訊（例如儲存紀錄或判斷邏輯），減少伺服器負載。
+## 4. 關鍵設計決策
+1. **整體規劃採用純後端 SSR 渲染**
+   - **原因**：雖然以 API + 前端框架（React/Vue）為主流，但我們的簿記系統需求為輕便迅速，沒有複雜的即時操作。採用 SSR 可將架構簡化至最低，單兵作戰開發也能大幅降低除錯與跨頻溝通的成本，頁面載入速度反而更佳。
+2. **工整實施 MVC 切分檔案**
+   - **原因**：新手寫 Flask 容易將所有的資料庫指令與路由邏輯全部擠在單一的 `app.py` 中。藉由拆分 `models.py` 與 `routes.py` 可以大幅提升程式碼找尋效率並方便擴展（例如單獨針對 model 做單元測試）。
+3. **選擇 SQLite 以符合輕量理念**
+   - **原因**：一般的資料庫伺服器建置與連線步驟繁瑣，對於「個人」管理為主的系統來說有些殺雞用牛刀。選擇單一檔案即可運作的 SQLite，使此系統在佈署或移植到其它電腦觀看時擁有極高的彈性。
