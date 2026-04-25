@@ -1,1 +1,102 @@
-<!-- 空白的 form 模板，待後續實作內容填寫 -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-9 col-lg-7 col-xl-6">
+        <div class="glass-card shadow-lg border-0 position-relative overflow-hidden">
+            <!-- decorative gradient blob -->
+            <div class="position-absolute top-0 start-50 translate-middle" style="width: 250px; height: 100px; background: var(--primary-gradient); filter: blur(60px); opacity: 0.3; z-index: 0;"></div>
+            
+            <div class="p-5 position-relative z-1">
+                <div class="text-center mb-5 mt-2">
+                    <h2 class="fw-bold text-white mb-2">
+                        {% if action == 'new' %}新增紀錄{% else %}編輯紀錄{% endif %}
+                    </h2>
+                    <p class="text-secondary small">請填寫以下的收支明細，掌握您的資金流向</p>
+                </div>
+
+                <form action="{% if action == 'new' %}{{ url_for('records.create_record') }}{% else %}{{ url_for('records.update_record', id=record.id) }}{% endif %}" method="POST">
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-light opacity-75 small text-uppercase tracking-wide fw-bold mb-3">收支類型 <span class="text-danger">*</span></label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check flex-fill form-radio-custom box-expense" onclick="document.getElementById('type_expense').click();">
+                                <input class="form-check-input float-none me-2 d-none" type="radio" name="type" id="type_expense" value="expense" {% if not record or record.type == 'expense' %}checked{% endif %} required>
+                                <label class="form-check-label fw-bold" for="type_expense" style="cursor:pointer;"><i class="bi bi-arrow-up-circle me-2"></i>支出</label>
+                            </div>
+                            <div class="form-check flex-fill form-radio-custom box-income" onclick="document.getElementById('type_income').click();">
+                                <input class="form-check-input float-none me-2 d-none" type="radio" name="type" id="type_income" value="income" {% if record and record.type == 'income' %}checked{% endif %} required>
+                                <label class="form-check-label fw-bold" for="type_income" style="cursor:pointer;"><i class="bi bi-arrow-down-circle me-2"></i>收入</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label for="amount" class="form-label text-light opacity-75 small text-uppercase tracking-wide fw-bold">金額 <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text btn-glass text-light border-end-0">NT$</span>
+                                <input type="number" class="form-control form-control-lg fw-bold fs-4 bg-transparent text-white border-start-0 ps-0" id="amount" name="amount" min="0" step="0.01" value="{{ record.amount if record else '' }}" required placeholder="0">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="date" class="form-label text-light opacity-75 small text-uppercase tracking-wide fw-bold">日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control form-control-lg bg-transparent text-white custom-date-input" id="date" name="date" value="{{ record.date if record else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="category" class="form-label text-light opacity-75 small text-uppercase tracking-wide fw-bold">分類 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg bg-transparent text-white" id="category" name="category" value="{{ record.category if record else '' }}" required placeholder="例如：飲食、交通、薪資">
+                    </div>
+
+                    <div class="mb-5">
+                        <label for="description" class="form-label text-light opacity-75 small text-uppercase tracking-wide fw-bold">備註 <span class="text-secondary">(選填)</span></label>
+                        <textarea class="form-control bg-transparent text-white" id="description" name="description" rows="3" placeholder="紀錄更多細節...">{{ record.description if record else '' }}</textarea>
+                    </div>
+
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-end mt-4 pt-3 border-top border-light border-opacity-10">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-dark text-light border border-secondary border-opacity-50 px-4 rounded-pill py-2">取消操作</a>
+                        <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-lg fw-bold py-2 hover-scale">
+                            {% if action == 'new' %}<i class="bi bi-save me-2"></i>確認新增{% else %}<i class="bi bi-check-lg me-2"></i>儲存修改{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    {% if action == 'new' and not record %}
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.getElementById('date').value) {
+            document.getElementById('date').valueAsDate = new Date();
+        }
+    });
+    {% endif %}
+    
+    // Add active styling for custom radio buttons logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeRadios = document.querySelectorAll('input[name="type"]');
+        const boxIncome = document.querySelector('.box-income');
+        const boxExpense = document.querySelector('.box-expense');
+        
+        function updateRadioUI() {
+            let selectedType = document.querySelector('input[name="type"]:checked').value;
+            if(selectedType === 'income'){
+                boxIncome.classList.add('active-income');
+                boxExpense.classList.remove('active-expense');
+            } else {
+                boxExpense.classList.add('active-expense');
+                boxIncome.classList.remove('active-income');
+            }
+        }
+        
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', updateRadioUI);
+        });
+        updateRadioUI();
+    });
+</script>
+{% endblock %}
