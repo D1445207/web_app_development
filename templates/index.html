@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>實質購買力計算機</title>
+</head>
+<body>
+    <h1>實質購買力計算機</h1>
+    
+    <div>
+        <label>原始年份: <input type="number" id="start_year"></label>
+        <label>原始金額: <input type="number" id="amount"></label>
+        <label>目標年份: <input type="number" id="end_year"></label>
+        <button onclick="calculate()">計算實質價值</button>
+    </div>
+
+    <div id="result_area" style="font-size: 2em; margin-top: 20px;">
+        </div>
+
+    <div id="history_area">
+        <h3>歷史紀錄清單 (最近3-5筆)</h3>
+        <ul id="history_list"></ul>
+    </div>
+
+    <script>
+        let history = []; // 暫存本次登入紀錄
+
+        async function calculate() {
+            // 讀取輸入值
+            const payload = {
+                start_year: document.getElementById('start_year').value,
+                end_year: document.getElementById('end_year').value,
+                amount: document.getElementById('amount').value
+            };
+
+            // 發送請求
+            const res = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            // 更新結果顯示
+            document.getElementById('result_area').innerHTML = `
+                實質金額: ${data.real_value} 元<br>
+                約等於 ${data.big_mac_count} 個大麥克<br>
+                或 ${data.pork_bento_count} 個排骨飯
+            `;
+
+            // 更新歷史紀錄 (保留最近 5 筆)
+            history.unshift(`從 ${payload.start_year} 年的 ${payload.amount} 轉換至 ${payload.end_year} 年為 ${data.real_value}`);
+            if(history.length > 5) history.pop();
+            
+            document.getElementById('history_list').innerHTML = history.map(item => `<li>${item}</li>`).join('');
+        }
+    </script>
+</body>
+</html>
